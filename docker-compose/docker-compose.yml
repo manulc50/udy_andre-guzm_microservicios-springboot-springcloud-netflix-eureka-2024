@@ -1,0 +1,261 @@
+# Usamos la versión "3.7" de Docker Compose(la más actual hasta la fecha)
+# Es obligatorio indicar la versión
+version: "3.7"
+# Aquí indicamos los servicios que componen nuestra aplicación
+services:
+    # Creamos un servicio llamado "config-server"
+    config-server:
+        # Aquí indicamos el nombre de la imagen a partir de la cual se va a crear el contenedor del servicio
+        # Este contenedor va a ser creado usando una imagen personalizada nuestra llamada "config-server" con tag o versión "v1" a partir de un Dockerfile
+        image: config-server:v1
+        # Aquí indicamos el mapeo de puertos que vamos a usar de nuestra máquina o host con los del contendor
+        ports:
+            # Mapeamos el puerto 8888 de nuestra máquina o host con el puerto 8888 del contenedor(El puerto 8888 es donde se ejecuta va a ejecutar nuestra aplicación SpringBoot en el contenedor)
+            - "8888:8888"
+        # Indicamos que podemos reiniciar el contendor de este servicio siempre que lo necesitemos.Si ocurre algún error en el inicio de este contenedor o servicio,lo vuelve a intentar
+        restart: always
+        # Aquí conectamos redes al contenedor
+        networks:
+            # Este contenedor o servicio se va a conectar con la red "springcloud"
+            - springcloud
+    # Creamos un servicio llamado "servicio-eureka-server"
+    servicio-eureka-server:
+        # Aquí indicamos el nombre de la imagen a partir de la cual se va a crear el contenedor del servicio
+        # Este contenedor va a ser creado usando una imagen personalizada nuestra llamada "servicio-eureka-server" con tag o versión "v1" a partir de un Dockerfile
+        image: servicio-eureka-server:v1
+        # Aquí indicamos el mapeo de puertos que vamos a usar de nuestra máquina o host con los del contendor
+        ports:
+            # Mapeamos el puerto 8888 de nuestra máquina o host con el puerto 8761 del contenedor(El puerto 8761 es donde se ejecuta va a ejecutar nuestra aplicación SpringBoot en el contenedor)
+            - "8761:8761"
+        # Indicamos que podemos reiniciar el contendor de este servicio siempre que lo necesitemos.Si ocurre algún error en el inicio de este contenedor o servicio,lo vuelve a intentar
+        restart: always
+        # Aquí conectamos redes al contenedor
+        networks:
+            # Este contenedor o servicio se va a conectar con la red "springcloud"
+            - springcloud
+    # Creamos un servicio llamado "microservicios-mysql8"
+    microservicios-mysql8:
+        # Aquí indicamos el nombre de la imagen a partir de la cual se va a crear el contenedor del servicio
+        # Usamos una imagen mysql con versión o tag "8"
+        image: mysql:8
+        # Aquí indicamos el mapeo de puertos que vamos a usar de nuestra máquina o host con los del contendor
+        ports:
+            # Mapeamos el puerto 3306 de nuestra máquina o host con el puerto 3306 del contenedor(El puerto 3306 es donde se ejecuta por defecto MySQL)
+            - "3306:3306"
+        # Aquí creamos las variables de entorno necesarias para el servicio
+        environment:
+            # Creamos una variable de entorno llamada "MYSQL_DATABASE" con el valor "db_springboot_cloud".Esta variable de entorno sirve para que MySQL genere una base de datos con nombre "db_springboot_cloud"
+            MYSQL_DATABASE: db_springboot_cloud
+            # Creamos una variable de entorno llamada "MYSQL_ROOT_PASSWORD" con el valor "root".Esta variable de entorno sirve para que MySQL asocie la contraseña "root" al usuario "root" que se crea por defecto automáticamente
+            MYSQL_ROOT_PASSWORD: root
+        # Indicamos que podemos reiniciar el contendor de este servicio siempre que lo necesitemos.Si ocurre algún error en el inicio de este contenedor o servicio,lo vuelve a intentar
+        restart: always
+        # Aquí conectamos redes al contenedor
+        networks:
+            # Este contenedor o servicio se va a conectar con la red "springcloud"
+            - springcloud
+    # Creamos un servicio llamado "servicio-productos"
+    servicio-productos:
+        # Aquí indicamos el nombre de la imagen a partir de la cual se va a crear el contenedor del servicio
+        # Este contenedor va a ser creado usando una imagen personalizada nuestra llamada "servicio-productos" con tag o versión "v1" a partir de un Dockerfile
+        image: servicio-productos:v1
+
+        # En este caso no ponemos el comando "ports" para mapear puertos de la máquina o host con puertos del contenedor porque esta aplicación SpringBoot genera un puerto de ejecución aleatorio y no podemos saberlo
+
+        # Indicamos que podemos reiniciar el contendor de este servicio siempre que lo necesitemos.Si ocurre algún error en el inicio de este contenedor o servicio,lo vuelve a intentar
+        restart: always
+        # Aquí conectamos redes al contenedor
+        networks:
+            # Este contenedor o servicio se va a conectar con la red "springcloud"
+            - springcloud
+        # Aquí indicamos las dependencias de este servicio,es decir,los servicios que son necesarios que se ejecuten antes que éste para su buen funcionamiento
+        depends_on:
+            # Este servicio depende de los servicios "config-server","servicio-eureka-server" y "microservicios-mysql8" para su correcta ejecución
+            # Depende del servicio "config-server" porque ahí se encuentran algunos archivos de propiedades para ser aplicados en distintos entornos de ejecución(Desarrollo,Producción,...)
+            - config-server
+            # Depende del servicio "servicio-eureka-server" porque ahí se registran los servicios para que se puedan comunicar entre ellos a través de sus nombres
+            - servicio-eureka-server
+            # Depende del servicio "microservicios-mysql8" porque contiene la base de datos con los productos en MySQL que es necesario para este servicio 
+            - microservicios-mysql8
+    # Creamos un servicio llamado "servicio-items"
+    servicio-items:
+        # Aquí indicamos el nombre de la imagen a partir de la cual se va a crear el contenedor del servicio
+        # Este contenedor va a ser creado usando una imagen personalizada nuestra llamada "servicio-items" con tag o versión "v1" a partir de un Dockerfile
+        image: servicio-items:v1
+        # Aquí indicamos el mapeo de puertos que vamos a usar de nuestra máquina o host con los del contendor
+        ports:
+            # Mapeamos el puerto 8002 de nuestra máquina o host con el puerto 8002 del contenedor(El puerto 8002 es donde se ejecuta la aplicación SpringBoot en el entorno de Desarrollo si no existe el archivo de propiedades "servicio-items.properties" en nuestro Spring Config Server)
+            - "8002:8002"
+            # Mapeamos el puerto 8005 de nuestra máquina o host con el puerto 8005 del contenedor(El puerto 8005 es donde se ejecuta la aplicación SpringBoot en el entorno de Desarrollo si existe el archivo de propiedades "servicio-items.properties" en nuestro Spring Config Server)
+            - "8005:8005"
+            # Mapeamos el puerto 8007 de nuestra máquina o host con el puerto 8007 del contenedor(El puerto 8007 es donde se ejecuta la aplicación SpringBoot en el entorno de Producción)
+            - "8007:8007"
+        # Indicamos que podemos reiniciar el contendor de este servicio siempre que lo necesitemos.Si ocurre algún error en el inicio de este contenedor o servicio,lo vuelve a intentar
+        restart: always
+        # Aquí conectamos redes al contenedor
+        networks:
+            # Este contenedor o servicio se va a conectar con la red "springcloud"
+            - springcloud
+        # Aquí indicamos las dependencias de este servicio,es decir,los servicios que son necesarios que se ejecuten antes que éste para su buen funcionamiento
+        depends_on:
+            # Este servicio depende de los servicios "config-server","servicio-eureka-server" y "servicio-productos" para su correcta ejecución
+            # Depende del servicio "config-server" porque ahí se encuentran algunos archivos de propiedades para ser aplicados en distintos entornos de ejecución(Desarrollo,Producción,...)
+            - config-server
+            # Depende del servicio "servicio-eureka-server" porque ahí se registran los servicios para que se puedan comunicar entre ellos a través de sus nombres
+            - servicio-eureka-server
+            # Depende del servicio "servicio-productos" porque este servicio se comunica con el servicio de productos
+            - servicio-productos
+    # Creamos un servicio llamado "microservicios-postgres12"
+    microservicios-postgres12:
+        # Aquí indicamos el nombre de la imagen a partir de la cual se va a crear el contenedor del servicio
+        # Usamos una imagen postgres con versión o tag "12-alpine"
+        image: postgres:12-alpine
+        # Aquí indicamos el mapeo de puertos que vamos a usar de nuestra máquina o host con los del contendor
+        ports:
+            # Mapeamos el puerto 5432 de nuestra máquina o host con el puerto 5432 del contenedor(El puerto 5432 es donde se ejecuta por defecto Postgres)
+            - "5432:5432"
+        # Aquí creamos las variables de entorno necesarias para el servicio
+        environment:
+            # Creamos una variable de entorno llamada "POSTGRES_DB" con el valor "db_springboot_cloud".Esta variable de entorno sirve para que Postgres genere una base de datos con nombre "db_springboot_cloud"
+            POSTGRES_DB: db_springboot_cloud
+            # Creamos una variable de entorno llamada "POSTGRES_PASSWORD" con el valor "root".Esta variable de entorno sirve para que Postgres asocie la contraseña "root" al usuario "root" que se crea por defecto automáticamente
+            POSTGRES_PASSWORD: root
+        # Indicamos que podemos reiniciar el contendor de este servicio siempre que lo necesitemos.Si ocurre algún error en el inicio de este contenedor o servicio,lo vuelve a intentar
+        restart: always
+        # Aquí conectamos redes al contenedor
+        networks:
+            # Este contenedor o servicio se va a conectar con la red "springcloud"
+            - springcloud
+    # Creamos un servicio llamado "servicio-usuarios"
+    servicio-usuarios:
+        # Aquí indicamos el nombre de la imagen a partir de la cual se va a crear el contenedor del servicio
+        # Este contenedor va a ser creado usando una imagen personalizada nuestra llamada "servicio-usuarios" con tag o versión "v1" a partir de un Dockerfile
+        image: servicio-usuarios:v1
+
+        # En este caso no ponemos el comando "ports" para mapear puertos de la máquina o host con puertos del contenedor porque esta aplicación SpringBoot genera un puerto de ejecución aleatorio y no podemos saberlo
+
+        # Indicamos que podemos reiniciar el contendor de este servicio siempre que lo necesitemos.Si ocurre algún error en el inicio de este contenedor o servicio,lo vuelve a intentar
+        restart: always
+        # Aquí conectamos redes al contenedor
+        networks:
+            # Este contenedor o servicio se va a conectar con la red "springcloud"
+            - springcloud
+        # Aquí indicamos las dependencias de este servicio,es decir,los servicios que son necesarios que se ejecuten antes que éste para su buen funcionamiento
+        depends_on:
+            # Este servicio depende de los servicios "config-server","servicio-eureka-server" y "microservicios-mysql8" para su correcta ejecución
+            # Depende del servicio "config-server" porque ahí se encuentran algunos archivos de propiedades para ser aplicados en distintos entornos de ejecución(Desarrollo,Producción,...)
+            - config-server
+            # Depende del servicio "servicio-eureka-server" porque ahí se registran los servicios para que se puedan comunicar entre ellos a través de sus nombres
+            - servicio-eureka-server
+            # Depende del servicio "microservicios-postgres12" porque contiene la base de datos con los usuarios en Postgres que es necesario para este servicio 
+            - microservicios-postgres12
+    # Creamos un servicio llamado "servicio-oauth"
+    servicio-oauth:
+        # Aquí indicamos el nombre de la imagen a partir de la cual se va a crear el contenedor del servicio
+        # Este contenedor va a ser creado usando una imagen personalizada nuestra llamada "servicio-oauth" con tag o versión "v1" a partir de un Dockerfile
+        image: servicio-oauth:v1
+        # Aquí indicamos el mapeo de puertos que vamos a usar de nuestra máquina o host con los del contendor
+        ports:
+            # Mapeamos el puerto 9100 de nuestra máquina o host con el puerto 9100 del contenedor(El puerto 9100 es donde se ejecuta nuestra aplicación SpringBoot en el contenedor)
+            - "9100:9100"
+        # Indicamos que podemos reiniciar el contendor de este servicio siempre que lo necesitemos.Si ocurre algún error en el inicio de este contenedor o servicio,lo vuelve a intentar
+        restart: always
+        # Aquí conectamos redes al contenedor
+        networks:
+            # Este contenedor o servicio se va a conectar con la red "springcloud"
+            - springcloud
+        # Aquí indicamos las dependencias de este servicio,es decir,los servicios que son necesarios que se ejecuten antes que éste para su buen funcionamiento
+        depends_on:
+            # Este servicio depende de los servicios "config-server","servicio-eureka-server","servicio-productos" y "servicio-items" para su correcta ejecución
+            # Depende del servicio "config-server" porque ahí se encuentran algunos archivos de propiedades para ser aplicados en distintos entornos de ejecución(Desarrollo,Producción,...)
+            - config-server
+            # Depende del servicio "servicio-eureka-server" porque ahí se registran los servicios para que se puedan comunicar entre ellos a través de sus nombres
+            - servicio-eureka-server
+            # Depende del servicio "servicio-usuarios" porque este servicio se comunica con el servicio de productos
+            - servicio-usuarios
+    # Creamos un servicio llamado "servicio-zuul-server"
+    servicio-zuul-server:
+        # Aquí indicamos el nombre de la imagen a partir de la cual se va a crear el contenedor del servicio
+        # Este contenedor va a ser creado usando una imagen personalizada nuestra llamada "servicio-zuul-server" con tag o versión "v1" a partir de un Dockerfile
+        image: servicio-zuul-server:v1
+        # Aquí indicamos el mapeo de puertos que vamos a usar de nuestra máquina o host con los del contendor
+        ports:
+            # Mapeamos el puerto 8090 de nuestra máquina o host con el puerto 8090 del contenedor(El puerto 8090 es donde se ejecuta nuestra aplicación SpringBoot en el contenedor)
+            - "8090:8090"
+        # Indicamos que podemos reiniciar el contendor de este servicio siempre que lo necesitemos.Si ocurre algún error en el inicio de este contenedor o servicio,lo vuelve a intentar
+        restart: always
+        # Aquí conectamos redes al contenedor
+        networks:
+            # Este contenedor o servicio se va a conectar con la red "springcloud"
+            - springcloud
+        # Aquí indicamos las dependencias de este servicio,es decir,los servicios que son necesarios que se ejecuten antes que éste para su buen funcionamiento
+        depends_on:
+            # Este servicio depende de los servicios "config-server","servicio-eureka-server","servicio-productos" y "servicio-items" para su correcta ejecución
+            # Depende del servicio "config-server" porque ahí se encuentran algunos archivos de propiedades para ser aplicados en distintos entornos de ejecución(Desarrollo,Producción,...)
+            - config-server
+            # Depende del servicio "servicio-eureka-server" porque ahí se registran los servicios para que se puedan comunicar entre ellos a través de sus nombres
+            - servicio-eureka-server
+            # Depende del servicio "servicio-productos" porque este servicio se comunica con el servicio de productos
+            - servicio-productos
+            # Depende del servicio "servicio-items" porque este servicio se comunica con el servicio de items
+            - servicio-items
+            # Depende del servicio "servicio-oauth" porque este servicio se comunica con el servicio de seguridad oauth
+            - servicio-oauth
+    # Creamos un servicio llamado "microservicios-rabbitmq38"
+    microservicios-rabbitmq38:
+        # Aquí indicamos el nombre de la imagen a partir de la cual se va a crear el contenedor del servicio
+        # Usamos una imagen rabbitmq con versión o tag "3.8-management-alpine"
+        image: rabbitmq:3.8-management-alpine
+        # Aquí indicamos el mapeo de puertos que vamos a usar de nuestra máquina o host con los del contendor
+        ports:
+            # Mapeamos el puerto 15672 de nuestra máquina o host con el puerto 15672 del contenedor(El puerto 15672 es donde se accede a la aplicación web del broker o cola de mensajería RabbitMQ en el contenedor)
+            - "15672:15672"
+            # Mapeamos el puerto 5672 de nuestra máquina o host con el puerto 5672 del contenedor(El puerto 5672 es donde se ejecuta el servidor del broker o cola de mensajería RabbitMQ en el contenedor)
+            - "5672:5672"
+        # Indicamos que podemos reiniciar el contendor de este servicio siempre que lo necesitemos.Si ocurre algún error en el inicio de este contenedor o servicio,lo vuelve a intentar
+        restart: always
+        # Aquí conectamos redes al contenedor
+        networks:
+            # Este contenedor o servicio se va a conectar con la red "springcloud"
+            - springcloud
+    # Creamos un servicio llamado "zipkin-server"
+    zipkin-server:
+        # Aquí indicamos el nombre de la imagen a partir de la cual se va a crear el contenedor del servicio
+        # Usamos una imagen openzipkin/zipkin con versión o tag "2.19.2"
+        image: openzipkin/zipkin:2.19.2
+        # Aquí indicamos el mapeo de puertos que vamos a usar de nuestra máquina o host con los del contendor
+        ports:
+            # Mapeamos el puerto 9411 de nuestra máquina o host con el puerto 9411 del contenedor(El puerto 9411 es donde se ejecuta el servidor Zipkin en el contenedor)
+            - "9411:9411"
+        # Aquí creamos las variables de entorno necesarias para el servicio
+        environment:
+            # Creamos una variable de entorno llamada "RABBIT_ADDRESSES" con el valor "microservicios-rabbitmq38:5672"("microservicios-rabbitmq38" es el nombre del servicio o contenedor donde se encuentra RabbitMQ).Esta variable de entorno sirve para que indicar a Zipkin la ruta o path donde se ejecuta el broker o cola de mensajería RabbitMQ
+            RABBIT_ADDRESSES: microservicios-rabbitmq38:5672
+            # Creamos una variable de entorno llamada "STORAGE_TYPE" con el valor "mysql".Esta variable de entorno sirve para que Zipkin utilice una base de datos MySQL,en lugar de una H2(valor por defecto),para almacenar las trazas de las peticiones a los micro-servicios
+            STORAGE_TYPE: mysql
+            # Creamos una variable de entorno llamada "MYSQL_USER" con el valor "zipkin".Esta variable de entorno sirve para crear un usuario llamado "zipkin" en la base de datos MySQL
+            MYSQL_USER: zipkin
+            # Creamos una variable de entorno llamada "MYSQL_PASS" con el valor "zipkin".Esta variable de entorno sirve para establecer la contraseña "zipkin" al usuario anterior "zipkin"
+            MYSQL_PASS: zipkin
+            # Creamos una variable de entorno llamada "MYSQL_HOST" con el valor "microservicios-mysql8"("microservicios-mysql8" es el nombre del servicio o contenedor donde se encuentra la base de datos MySQL).Esta variable de entorno sirve para indicar a Zipkin el nombre de la máquina o host donde se localiza la base de datos MySQL
+            MYSQL_HOST: microservicios-mysql8
+        # Indicamos que podemos reiniciar el contendor de este servicio siempre que lo necesitemos.Si ocurre algún error en el inicio de este contenedor o servicio,lo vuelve a intentar
+        restart: always
+        # Aquí conectamos redes al contenedor
+        networks:
+            # Este contenedor o servicio se va a conectar con la red "springcloud"
+            - springcloud
+        # Aquí indicamos las dependencias de este servicio,es decir,los servicios que son necesarios que se ejecuten antes que éste para su buen funcionamiento
+        depends_on:
+            # Este servicio depende de los servicios "microservicios-rabbitmq38" y "microservicios-mysql8" para su correcta ejecución
+            # Depende del servicio "microservicios-rabbitmq38" porque el broker o cola de mensajería RabbitMQ hace de intermediario entre las peticiones a los micro-servicios y el servidor Zipkin,que este servicio.Por lo tanto,hay una comunicación entre el broker RabbitMQ y este servicio
+            - microservicios-rabbitmq38
+            # Depende del servicio "microservicios-mysql8" porque contiene la base de datos MySQL donde se van a almacenar las trazas de las peticiones hechas a los micro-servicios
+            - microservicios-mysql8
+
+# Aquí van las redes que queremos crear para la comunicación de los servicios de nuestra aplicación
+# Las redes son opcionales.Si no se especifica una red,Docker Compose crea una red por defecto y conecta los contenedores definidos en este archivo a dicha red
+networks:
+    # Crea una red llamada "springcloud" con el driver por defecto que es Bridge
+    # Todos los contenedores conectados a esta red van a poder comunicarse entre sí usando el nombre del contenedor o el nombre del servicio
+    springcloud:

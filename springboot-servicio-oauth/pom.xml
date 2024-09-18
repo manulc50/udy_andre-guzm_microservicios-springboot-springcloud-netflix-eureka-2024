@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>2.5.3</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+	<groupId>com.formacionbdi.springboot.app.oauth</groupId>
+	<artifactId>springboot-servicio-oauth</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>springboot-servicio-oauth</name>
+	<description>Demo project for Spring Boot</description>
+
+	<properties>
+		<java.version>11</java.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<spring-cloud.version>2020.0.3</spring-cloud.version>
+	</properties>
+
+	<dependencies>
+	    <!-- Añadimos la dependencia de nuestra librería común para poder usar en este proyecto las clase entidad "Usuario" y "Role" -->
+		<dependency>
+			<groupId>com.formacionbdi.springboot.app.usuarios.commons</groupId>
+			<artifactId>springboot-servicio-usuarios-commons</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+			<exclusions>
+				<!-- Excluimos la libreía Spring Data JPA de la dependencia anterior "springboot-servicio-usuarios-commons" -->
+				<!-- Esto lo hacemos para que no se haga el proceso de auto-configuración del DataSource por parte de Spring Boot,ya que en este proyecto no vamos a usar ninguna base de datos -->
+				<!-- Otra alternativa es anotar la clase principal de la aplicación SpringbootServicioOauthApplication con la anotación @EnableAutoConfiguration(exclude = {DataSourceAutoConfiguration.class}) para desactivar el proceso de auto-configuración del DataSource-->
+				<exclusion>
+					<groupId>org.springframework.boot</groupId>
+					<artifactId>spring-boot-starter-data-jpa</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+		<!-- Siempre que queramos que una aplicación se registre en un servidor de nombres como Eureka,tiene que tener esta dependencia -->
+		<!-- Esta dependencia incluye la dependencia del balanceador de carga Spring Cloud Load Balancer -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-openfeign</artifactId>
+		</dependency>
+		<!-- Nota: Usamos este versión y no otra superior porque, desde la versión 2.4, se eliminó el componente para generar el token JWT, es decir, se eliminó el servidor de autorización y sólamente se dejó la parte del cliente -->
+		<!-- Si usamos una versión superior a la 2.4, tenemos que usar un servidor de autorización externo -->
+		<dependency>
+			<groupId>org.springframework.security.oauth</groupId>
+			<artifactId>spring-security-oauth2</artifactId>
+			<version>2.3.8.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-jwt</artifactId>
+			<version>1.1.1.RELEASE</version>
+		</dependency>
+		<!-- Esta dependencia es requrida por Spring Security y, como estamos usando una versión de JDK superior a la 8, la tenemos que añadir manualmente porque se eliminó del JDK a partir de esa versión(9+) -->
+		<dependency>
+			<groupId>org.glassfish.jaxb</groupId>
+			<artifactId>jaxb-runtime</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-devtools</artifactId>
+			<scope>runtime</scope>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-config</artifactId>
+		</dependency>
+		<!-- Spring Cloud Sleuth es un componente de Spring Cloud que nos permite tomar mediciones mediante trazas de las peticiones realizadas a otros micro-servicios -->
+		<!-- Nota: En las últimas versiones de Spring Cloud(3.x.x), si se quiere usar Zipkin y Sleuth conjuntamente, deben estar ambas dependencias -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-sleuth</artifactId>
+		</dependency>
+		<!-- Esta dependencia se trata de un cliente para la herramienta Zipkin que nos permite exportar las trazas de las peticiones a micro-servicios obtenidas por Spring Cloud Sleuth al servidor Zipkin -->
+		<!-- Como requisito para su correcto funcionamiento,el servidor Zipkin tiene que estar previamente ejecutándose -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-sleuth-zipkin</artifactId>
+		</dependency>
+
+		<!-- Esta dependencia es para que este micro-servicio se pueda conectar,como un publicador,al broker(hace de intermediario entre los micro-servicios,que son los publicadores,y el servidor Zipkin,que es el consumidor) o cola de mensajería RabbitMQ -->
+		<!-- Este micro-servicio publicará las trazas generadas por Spring Cloud Sleuth en el broker o cola de mensajería RabbitMQ y serán consmuidas por el servidor ZipKin-->
+		<!-- Si las dos siguientes dependencias están presentes,automáticamente las trazas generadas por Spring Cloud Sleuth se van a enviar al broker o cola de mensajería RabbitMQ,y no al servidor Zipkin -->
+		<!-- Para que este micro-servicio vuelva a enviar directamente las trazas al servidor Zipkin sin pasar por el broker RabbitMQ,hay que eliminar de este Pom las dos siguientes dependencias -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-amqp</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.amqp</groupId>
+			<artifactId>spring-rabbit-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework.cloud</groupId>
+				<artifactId>spring-cloud-dependencies</artifactId>
+				<version>${spring-cloud.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>

@@ -1,0 +1,31 @@
+# Configuración de Resilience4j
+# Nota: Parámetros por defecto: sliding-window-size: 100, failure-rate-threshold: 50, wait-duration-in-open-state: 60000ms, permitted-number-of-calls-in-half-open-state: 10, slow-call-rate-threshold: 100 y slow-call-duration-threshold: 60000ms
+# Nota: Timeout por defecto: 1 seg(propiedad "timeout-duration" de Time Limiter)
+# Nota: Las configuraciones de Resilience4j indicadas en un archivo .yml, .yaml o .properties tienen prioridad respecto a las configuraciones de Resilience4j indicadas programáticamente en clases de configuración
+#       Por esta razón, la configuración de este archivo .yml tiene prioridad sobre la configuración del bean "defaultCustomizer" creado en la clase de configuración "AppConfig"
+resilience4j:
+  circuitbreaker:
+    configs:
+      # Configuración personalizada para Circuit Breaker llamada "defecto"
+      defecto:
+        sliding-window-size: 6
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 20s
+        permitted-number-of-calls-in-half-open-state: 4
+        slow-call-rate-threshold: 50
+        # Si una llamada supera este tiempo, se considera una llamada lenta y se tiene en cuenta para abrir el circuito
+        slow-call-duration-threshold: 2s
+    instances:
+      # Aplica la configuración personalizada para Circuit Breaker de arriba, llamada "defecto", al Circuit Breaker con id "items"
+      items:
+        base-config: defecto
+  timelimiter:
+    configs:
+      # Configuración personalizada para Time Limiter llamada "defecto"
+      defecto:
+        # Nota: Si el tiempo del timeout es igual al tiempo de la propiedad "slow-call-duration-threshold", tiene prioridad ese timeout. Por lo tanto, para que las llamadas lentas se tengan en cuenta, el tiempo de ese timeout debe ser superior al tiempo establecido en la propiedad "slow-call-duration-threshold" y debe permitir que la llamada se complete y responda
+        timeout-duration: 2s
+    instances:
+      # Aplica la configuración personalizada para Time Limiter de arriba, llamada "defecto", al Circuit Breaker con id "items"
+      items:
+        base-config: defecto

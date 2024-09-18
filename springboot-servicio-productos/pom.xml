@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<!-- No usamos una versión superior a esta porque, a partir de la versión 2.4.x de Spring Boot, el balanceador de carga Ribbon y Hystrix no son compatibles y no funcionan -->
+		<version>2.3.12.RELEASE</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+	<groupId>com.formacionbdi.springboot.app.productos</groupId>
+	<artifactId>springboot-servicio-productos</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>springboot-servicio-productos</name>
+	<description>Demo project for Spring Boot</description>
+
+	<properties>
+		<java.version>11</java.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<spring-cloud.version>Hoxton.SR12</spring-cloud.version>
+	</properties>
+
+	<dependencies>
+	    <!-- Añadimos la dependencia de nuestra librería común para microservicios.En esta librería se encuentra la clase entidad "Producto" que se usa tanto en el microservicio de productos como en el de items -->
+		<!-- Esta dependencia ya incluye la dependencia "spring-boot-starter-data-jpa" -->
+		<dependency>
+			<groupId>com.formacionbdi.springboot.app.commons</groupId>
+			<artifactId>springboot-servicio-commons</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+	    <dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+		<!-- Spring Cloud Sleuth es un componente de Spring Cloud que nos permite tomar mediciones mediante trazas de las peticiones realizadas a otros micro-servicios -->
+		<!-- Comentamos esta dependencia porque, al incluir la dependencia del cliente para Zipkin "spring-cloud-starter-zipkin" que hay más abajo, también se incluye esta dependencia -->
+		<!--<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-sleuth</artifactId>
+		</dependency> -->
+		<!-- Esta dependencia se trata de un cliente para la herramienta Zipkin que nos permite exportar las trazas de las peticiones a micro-servicios obtenidas por Spring Cloud Sleuth al servidor Zipkin -->
+		<!-- Como requisito para su correcto funcionamiento,el servidor Zipkin tiene que estar previamente ejecutándose -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-zipkin</artifactId>
+		</dependency>
+		<!-- Esta dependencia es para que este micro-servicio se pueda conectar,como un publicador,al broker(hace de intermediario entre los micro-servicios,que son los publicadores,y el servidor Zipkin,que es el consumidor) o cola de mensajería RabbitMQ -->
+		<!-- Este micro-servicio publicará las trazas generadas por Spring Cloud Sleuth en el broker o cola de mensajería RabbitMQ y serán consmuidas por el servidor ZipKin-->
+		<!-- Si las dos siguientes dependencias están presentes,automáticamente las trazas generadas por Spring Cloud Sleuth se van a enviar al broker o cola de mensajería RabbitMQ,y no al servidor Zipkin -->
+		<!-- Para que este micro-servicio vuelva a enviar directamente las trazas al servidor Zipkin sin pasar por el broker RabbitMQ,hay que eliminar de este Pom las dos siguientes dependencias -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-amqp</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-devtools</artifactId>
+			<scope>runtime</scope>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.amqp</groupId>
+			<artifactId>spring-rabbit-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- Las 2 siguientes dependencias son para trabajar con distintas bases de datos, H2 y MySQL
+		     Por defecto, si no se configura ningún data source, Spring Boot utiliza la base de datos H2-->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!-- Esta dependencia incluye la dependencia del balanceador de carga Ribbon -->
+		<!-- Siempre que queramos que una aplicación se registre en un servidor de nombres como Eureka,tiene que tener esta dependencia -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-config</artifactId>
+		</dependency>
+		
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework.cloud</groupId>
+				<artifactId>spring-cloud-dependencies</artifactId>
+				<version>${spring-cloud.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+</project>

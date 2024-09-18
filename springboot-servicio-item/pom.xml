@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>2.5.3</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+	<groupId>com.formacionbdi.springboot.app.item</groupId>
+	<artifactId>springboot-servicio-item</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>springboot-servicio-item</name>
+	<description>Demo project for Spring Boot</description>
+
+	<properties>
+		<java.version>11</java.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<spring-cloud.version>2020.0.3</spring-cloud.version>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-devtools</artifactId>
+			<scope>runtime</scope>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-openfeign</artifactId>
+		</dependency>
+		<!-- Esta dependencia no hace falta si vamos a registrar el microservicio en el servidor Eureka de Netflix ya que la dependencia de abajo, "spring-cloud-starter-netflix-eureka-client", que es el cliente de Eureka, ya la contiene  -->
+		<!--<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-loadbalancer</artifactId>
+		</dependency>-->
+		<!-- Esta dependencia incluye la dependencia del balanceador de carga Spring Cloud -->
+		<!-- Siempre que queramos que una aplicación se registre en un servidor de nombres como Eureka,tiene que tener esta dependencia -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-config</artifactId>
+		</dependency>
+		<!-- Esta dependencia es para usar el contexto de bootstrap que se eliminó en la versión 2.4 de Spring Boot(En las versiones 2.3.x se incluye dentro de la dependencia "spring-cloud-starter-config") -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-bootstrap</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-circuitbreaker-resilience4j</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<!-- Añadimos la dependencia de nuestra librería común para microservicios.En esta librería se encuentra la clase entidad "Producto" que se usa tanto en el microservicio de productos como en el de items -->
+		<dependency>
+			<groupId>com.formacionbdi.springboot.app.commons</groupId>
+			<artifactId>springboot-servicio-commons</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+		<!-- Spring Cloud Sleuth es un componente de Spring Cloud que nos permite tomar mediciones mediante trazas de las peticiones realizadas a otros micro-servicios -->
+		<!-- Nota: En las últimas versiones de Spring Cloud(3.x.x), si se quiere usar Zipkin y Sleuth conjuntamente, deben estar ambas dependencias -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-sleuth</artifactId>
+		</dependency>
+		<!-- Esta dependencia se trata de un cliente para la herramienta Zipkin que nos permite exportar las trazas de las peticiones a micro-servicios obtenidas por Spring Cloud Sleuth al servidor Zipkin -->
+		<!-- Como requisito para su correcto funcionamiento,el servidor Zipkin tiene que estar previamente ejecutándose -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-sleuth-zipkin</artifactId>
+		</dependency>
+		<!-- Esta dependencia es para que este micro-servicio se pueda conectar,como un publicador,al broker(hace de intermediario entre los micro-servicios,que son los publicadores,y el servidor Zipkin,que es el consumidor) o cola de mensajería RabbitMQ -->
+		<!-- Este micro-servicio publicará las trazas generadas por Spring Cloud Sleuth en el broker o cola de mensajería RabbitMQ y serán consmuidas por el servidor ZipKin-->
+		<!-- Si las dos siguientes dependencias están presentes,automáticamente las trazas generadas por Spring Cloud Sleuth se van a enviar al broker o cola de mensajería RabbitMQ,y no al servidor Zipkin -->
+		<!-- Para que este micro-servicio vuelva a enviar directamente las trazas al servidor Zipkin sin pasar por el broker RabbitMQ,hay que eliminar de este Pom las dos siguientes dependencias -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-amqp</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.amqp</groupId>
+			<artifactId>spring-rabbit-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework.cloud</groupId>
+				<artifactId>spring-cloud-dependencies</artifactId>
+				<version>${spring-cloud.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+</project>

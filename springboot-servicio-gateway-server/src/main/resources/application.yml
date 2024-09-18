@@ -1,0 +1,110 @@
+# Configuración de las rutas del Api Gateway
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: servicio-productos
+        uri: lb://servicio-productos
+        predicates:
+          # Algunos ejemplos de predicados(condiciones o restricciones) de fábrica
+          # Se aplica este enrutamiento a las rutas de peticiones http que coincidan con la expresión "/api/productos/**"
+          - Path=/api/productos/**
+          # El request de la petición http tiene que tener una cabecera llamada "token" cuyo valor coincida con la expresión "\d+", es decir, el valor tiene que ser un número
+          #- Header=token, \d+
+          # El request de la petición http tiene que tener una cabecera llamada "Content-Type" con el valor "application/json"
+          #- Header=Content-Type, application/json
+          # El tipo de método de la petición http tiene que ser GET o POST
+          #- Method=GET, POST
+          # La ruta de la petición http debe tener un parámetro llamado "color" y su valor debe ser "verde"
+          #- Query=color, verde
+          # La ruta de la petición http debe tener un parámetro llamado "color" con cualquier valor
+          #- Query=color
+          # En la petición http debe haber una cookie llamada "color" con valor "azul"
+          #- Cookie=color, azul
+        filters:
+          # Filtro de fábrica que elimina la parte "/api/productos"(1 hace referencia a la parte "/api" y 2 hace referencia a la parte "/api/productos") de la ruta antes de realizar el enrutamiento al microservicio
+          - StripPrefix=2
+          # Aplicamos nuestro filtro de tipo Gateway Filter Factory llamado "EjemploCookie" a las rutas que coincidan con la expresión "/api/productos/**"
+          #- name: EjemploCookie
+            # La clase de configuración de este filtro personalizado recibe los siguientes argumentos:
+            #args:
+              #mensaje: Hola, este es mi mensaje personalizado
+              #cookieNombre: usuario
+              # Como se trata del contenido de una cookie, no puede haber espacios entre las cadenas de texto
+              #cookieValor: ManuelLorenzo
+          # Forma equivalente y reducida a la de arriba para aplicar nuestro filtro de tipo Gateway Filter Factory llamado "EjemploCookie"
+          # Usando esta forma reducida, se debe sobrescribir en la clase del filtro el método "shortcutFieldOrder" de la clase abstracta "AbstractGatewayFilterFactory" para indicar el orden de pasada de los argumentos
+          - EjemploCookie=Hola este es mi mensaje personalizado, usuario, ManuelLorenzo
+          # Filtro de fábrica para crear un Circuit Breaker con id "productos"
+          # Nota: De la siguiente forma, el Circuit Breaker sólo funciona por timeout y por llamadas lentas, pero no funciona para errores por excepciones
+          #- CircuitBreaker=productos
+          # Nota: De la siguiente forma, el Circuit Breaker funciona por timeout, por llamadas lentas y por excepciones que producen el código de respuesta 500
+          - name: CircuitBreaker
+            args:
+              name: productos
+              statusCodes: 500
+              # Uri de fallback que se utiliza en caso de fallo
+              fallbackUri: forward:/api/items/ver/9/cantidad/3
+      - id: servicio-items
+        uri: lb://servicio-items
+        predicates:
+          - Path=/api/items/**
+        filters:
+          # Algunos ejemplos de filtros de fábrica
+          # Filtro de fábrica que elimina la parte "/api/items"(1 hace referencia a la parte "/api" y 2 hace referencia a la parte "/api/items") de la ruta antes de realizar el enrutamiento al microservicio
+          - StripPrefix=2
+          # Filtro de fábrica que añade una cabecera al request de la petición http
+          - AddRequestHeader=token-request, 123456
+          # Filtro de fábrica que añade una cabecera a la respuesta de la petición http
+          - AddResponseHeader=token-response, 12345678
+          # Filtro de fábrica que modifica una cabecera existente de la respuesta de la petición http
+          # Cambia el tipo de contenido del cuerpo o body de la respuesta http a texto plano
+          - SetResponseHeader=Content-Type, text/plain
+          # Filtro de fábrica que añade un parámetro al request de la petición http
+          - AddRequestParameter=nombre, manuel
+      - id: servicio-usuarios
+        uri: lb://servicio-usuarios 
+        predicates:
+          - Path=/api/usuarios/**
+        filters:
+          # Filtro de fábrica que elimina la parte "/api/usuarios"(1 hace referencia a la parte "/api" y 2 hace referencia a la parte "/api/usuarios") de la ruta antes de realizar el enrutamiento al microservicio
+          - StripPrefix=2
+      - id: servicio-oauth
+        uri: lb://servicio-oauth
+        predicates:
+          - Path=/api/security/**
+        filters:
+          # Filtro de fábrica que elimina la parte "/api/security"(1 hace referencia a la parte "/api" y 2 hace referencia a la parte "/api/security") de la ruta antes de realizar el enrutamiento al microservicio
+          - StripPrefix=2
+          
+# Configuración de Resilience4j
+# Nota: Parámetros por defecto: sliding-window-size: 100, failure-rate-threshold: 50, wait-duration-in-open-state: 60000ms, permitted-number-of-calls-in-half-open-state: 10, slow-call-rate-threshold: 100 y slow-call-duration-threshold: 60000ms
+# Nota: Timeout por defecto: 1 seg(propiedad "timeout-duration" de Time Limiter)
+# Nota: Las configuraciones de Resilience4j indicadas en un archivo .yml, .yaml o .properties tienen prioridad respecto a las configuraciones de Resilience4j indicadas programáticamente en clases de configuración
+resilience4j:
+  circuitbreaker:
+    configs:
+      # Configuración personalizada para Circuit Breaker llamada "defecto"
+      defecto:
+        sliding-window-size: 6
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 20s
+        permitted-number-of-calls-in-half-open-state: 4
+        slow-call-rate-threshold: 50
+        # Si una llamada supera este tiempo, se considera una llamada lenta y se tiene en cuenta para abrir el circuito
+        slow-call-duration-threshold: 2s
+    instances:
+      # Aplica la configuración personalizada para Circuit Breaker de arriba, llamada "defecto", al Circuit Breaker con id "productos"
+      productos:
+        base-config: defecto
+  timelimiter:
+    configs:
+      # Configuración personalizada para Time Limiter llamada "defecto"
+      defecto:
+        # Nota: Si el tiempo del timeout es igual al tiempo de la propiedad "slow-call-duration-threshold", tiene prioridad ese timeout. Por lo tanto, para que las llamadas lentas se tengan en cuenta, el tiempo de ese timeout debe ser superior al tiempo establecido en la propiedad "slow-call-duration-threshold" y debe permitir que la llamada se complete y responda
+        timeout-duration: 2s
+    instances:
+      # Aplica la configuración personalizada para Time Limiter de arriba, llamada "defecto", al Circuit Breaker con id "productos"
+      productos:
+        base-config: defecto
+          
